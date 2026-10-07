@@ -1,0 +1,6 @@
+{
+  "summary": "Implementation plan for MedZone, an enterprise-grade HIPAA-compliant telemedicine platform with dual-role Patient & Clinician portals, virtual video consultation suite, FHIR R4 EHR integration, prescription tracking with push notifications, and Web Crypto AES-GCM data security.",
+  "updatedAt": "2026-10-07T12:21:39.479266309Z",
+  "requestFeedback": true,
+  "userFacing": true
+}

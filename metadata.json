@@ -1,0 +1,6 @@
+{
+  "name": "MedZone - Telemedicine & Clinical EHR Platform",
+  "description": "Enterprise HIPAA-compliant telemedicine platform with virtual video consultations, FHIR R4 EHR integration, prescription tracking, and end-to-end encryption.",
+  "requestFramePermissions": ["camera", "microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
