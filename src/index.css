@@ -4,18 +4,82 @@
   :root {
     --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    /* Minimal HCW@Home palette — airy, one accent */
+    --mz-bg: #f2f6f7;
+    --mz-card: #ffffff;
+    --mz-ink: #16232b;
+    --mz-muted: #7b8a94;
+    --mz-faint: #a9b7bf;
+    --mz-teal: #0e8aa0;
+    --mz-teal-dark: #0b6e81;
+    --mz-teal-soft: #e9f4f6;
+    --mz-line: #e8eef0;
+    --mz-amber-bg: #fffaeb;
+    --mz-amber-line: #fbe9b7;
+  }
+
+  html, body, #root {
+    height: 100%;
   }
 
   body {
     font-family: var(--font-sans);
+    background: var(--mz-bg);
+    color: var(--mz-ink);
+    -webkit-font-smoothing: antialiased;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
   code, pre, .font-mono {
     font-family: var(--font-mono);
   }
+
+  ::placeholder {
+    color: #a9b7bf;
+  }
+
+  /* A single, high-contrast focus indicator that survives on white cards. */
+  *:focus-visible {
+    outline: 2px solid #0b6e81;
+    outline-offset: 2px;
+  }
+
+  /* Touch and keyboard users get the same minimum hit area. */
+  button, [role="button"], select, input {
+    min-height: 32px;
+  }
 }
 
-/* Custom scrollbars for clinical data tables and consultation drawers */
+/* Keyboard users can jump past the icon rail straight into the chart. */
+.mz-skip-link {
+  position: absolute;
+  left: 12px;
+  top: -48px;
+  z-index: 100;
+  padding: 10px 14px;
+  border-radius: 10px;
+  background: #0e8aa0;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  transition: top .15s ease;
+}
+.mz-skip-link:focus {
+  top: 12px;
+}
+
+/* Respect a vestibular-disorder preference: no sliding, pulsing or spin. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Thin minimal scrollbars */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -24,9 +88,64 @@
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: rgba(148, 163, 184, 0.4);
+  background: rgba(148, 163, 184, 0.35);
   border-radius: 9999px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(148, 163, 184, 0.7);
+  background: rgba(148, 163, 184, 0.6);
 }
+
+@layer components {
+  /* One card style for whole app */
+  .mz-card {
+    @apply bg-white rounded-2xl border border-[#e8eef0] shadow-[0_1px_2px_rgba(16,35,43,0.04)];
+  }
+  .mz-page {
+    @apply max-w-[1120px] mx-auto w-full px-6 sm:px-8 py-6 space-y-5;
+  }
+  .mz-h1 {
+    @apply text-[22px] font-extrabold tracking-tight text-[#16232b];
+  }
+  .mz-sub {
+    @apply text-[13px] text-[#7b8a94];
+  }
+  .mz-input {
+    @apply w-full bg-white border border-[#e8eef0] rounded-xl px-3.5 py-2.5 text-[13.5px] text-[#16232b] focus:outline-none focus:border-[#0e8aa0];
+  }
+  .mz-btn-primary {
+    @apply px-4 py-2 rounded-xl bg-[#0e8aa0] hover:bg-[#0b6e81] text-white text-[13px] font-semibold transition-colors cursor-pointer whitespace-nowrap;
+  }
+  .mz-btn-quiet {
+    @apply px-4 py-2 rounded-xl border border-[#e8eef0] bg-white text-[13px] font-semibold text-[#3d4f59] hover:bg-[#f6f9fa] transition-colors cursor-pointer whitespace-nowrap;
+  }
+
+  /* ——— global declutter: kill heavy shadows, gradients, dense borders ——— */
+  .shadow-md, .shadow-lg, .shadow-xl, .shadow-2xl {
+    box-shadow: 0 1px 2px rgba(16,35,43,.05) !important;
+  }
+  .shadow-xs, .shadow-sm {
+    box-shadow: none !important;
+  }
+  .backdrop-blur-md, .backdrop-blur, .backdrop-blur-xs {
+    backdrop-filter: none !important;
+  }
+
+  /* unify noisy slate surfaces to airy tints */
+  .bg-slate-50 { background-color: #f6f9fa !important; }
+  .bg-slate-100 { background-color: #eef2f3 !important; }
+
+  /* unify teal accent to single soft teal */
+  .bg-teal-700, .bg-teal-800, .bg-teal-600 { background-color: #0e8aa0 !important; }
+  .hover\:bg-teal-800:hover, .hover\:bg-teal-700:hover { background-color: #0b6e81 !important; }
+  .text-teal-700, .text-teal-800 { color: #0e8aa0 !important; }
+  .border-teal-200 { border-color: #cde7ec !important; }
+  .bg-teal-50 { background-color: #e9f4f6 !important; }
+
+  /* quiet all cards: thin line, large radius, no shadow */
+  .rounded-2xl { border-radius: 1.1rem !important; }
+
+  /* calm dense mono metadata */
+  .font-mono { font-size: .92em; letter-spacing: -.01em; }
+}
+
+

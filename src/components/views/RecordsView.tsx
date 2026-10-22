@@ -11,6 +11,7 @@ import {
   Activity,
 } from 'lucide-react';
 import { useMedZone } from '../../context/MedZoneContext';
+import { PatientChartPicker } from '../clinician/PatientChartPicker';
 
 export const RecordsView: React.FC = () => {
   const {
@@ -21,46 +22,45 @@ export const RecordsView: React.FC = () => {
   } = useMedZone();
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs">
+    <div className="space-y-5 pb-12">
+      {/* Quiet minimal header */}
+      <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl font-bold text-slate-900 tracking-tight">
-              Integrated Electronic Health Record (EHR)
+            <h1 className="mz-h1">
+              Health Record
             </h1>
-            <span className="text-xs font-mono font-bold bg-teal-50 text-teal-800 px-2 py-0.5 rounded border border-teal-200">
+            <span className="text-xs font-mono font-bold bg-[#e9f4f6] text-[#0e8aa0] px-2 py-0.5 rounded-full border border-[#cde7ec]">
               {patient.mrn}
             </span>
           </div>
-          <p className="text-xs text-slate-500 mt-1">
-            Official longitudinal clinical record, diagnostic findings, and verified allergy profiles.
-          </p>
+          <p className="mz-sub mt-1">Conditions, labs, and vitals — calmly in one place.</p>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          <PatientChartPicker />
           <button
             onClick={() => setShowFhirModal(true)}
-            className="flex items-center gap-1.5 px-3.5 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold rounded-lg text-xs cursor-pointer border border-slate-200"
+            className="mz-btn-quiet !py-2 !text-xs flex items-center gap-1.5"
           >
-            <FileCode2 className="w-4 h-4 text-teal-700" />
-            <span>FHIR R4 Inspector</span>
+            <FileCode2 className="w-4 h-4 text-[#0e8aa0]" />
+            <span>FHIR</span>
           </button>
           <button
             onClick={() => setShowSummaryExportModal(true)}
-            className="flex items-center gap-1.5 px-4 py-2 bg-teal-700 hover:bg-teal-800 text-white font-bold rounded-lg text-xs shadow-xs cursor-pointer"
+            className="mz-btn-primary !py-2 !text-xs flex items-center gap-1.5"
           >
             <Download className="w-4 h-4" />
-            <span>Export Summary</span>
+            <span>Export</span>
           </button>
         </div>
       </div>
 
-      {/* Allergies Critical Banner */}
-      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-5">
+      {/* Allergies — soft quiet banner */}
+      <div className="mz-card p-5 !border-[#fbe9b7] !bg-[#fffaeb]">
         <div className="flex items-center gap-2 text-rose-800 font-bold text-sm mb-3">
           <AlertTriangle className="w-4 h-4 text-rose-600" />
-          <span>Documented Patient Allergies &amp; Severe Reactions</span>
+          <span>Allergies</span>
         </div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           {patient.allergies.map((alg, idx) => (
@@ -70,7 +70,7 @@ export const RecordsView: React.FC = () => {
             >
               <div>
                 <p className="font-bold text-rose-900">{alg.substance}</p>
-                <p className="text-rose-700 text-[11px] mt-0.5">Reaction: {alg.reaction}</p>
+                <p className="text-rose-700 text-[11px] mt-0.5">{alg.reaction}</p>
               </div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 bg-rose-100 px-2 py-0.5 rounded">
                 {alg.severity}
@@ -85,7 +85,7 @@ export const RecordsView: React.FC = () => {
         {/* Active Conditions */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 text-sm">Chronic Conditions &amp; Diagnoses</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Conditions</h3>
             <span className="text-xs text-slate-400 font-mono">ICD-10-CM</span>
           </div>
           <div className="space-y-2.5">
@@ -101,7 +101,7 @@ export const RecordsView: React.FC = () => {
                       {c.icd10}
                     </span>
                   </div>
-                  <p className="text-[11px] text-slate-500 mt-1">Diagnosed: {c.diagnosedDate}</p>
+                  <p className="text-[11px] text-slate-500 mt-1">{c.diagnosedDate}</p>
                 </div>
                 <span className="text-[10px] font-bold text-teal-800 bg-teal-50 px-2 py-0.5 rounded border border-teal-200 uppercase">
                   {c.status}
@@ -114,8 +114,8 @@ export const RecordsView: React.FC = () => {
         {/* Diagnostic Labs */}
         <div className="bg-white rounded-2xl border border-slate-200/90 p-5 shadow-xs">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-bold text-slate-900 text-sm">Recent Diagnostic Laboratory Results</h3>
-            <span className="text-xs text-slate-400 font-mono">LOINC Standard</span>
+            <h3 className="font-bold text-slate-900 text-sm">Labs</h3>
+            <span className="text-xs text-slate-400 font-mono">LOINC</span>
           </div>
           <div className="space-y-2.5">
             {patient.recentLabs.map(lab => (
@@ -154,22 +154,21 @@ export const RecordsView: React.FC = () => {
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
             <Activity className="w-5 h-5 text-teal-700" />
-            <h3 className="font-bold text-slate-900 text-sm">Longitudinal Clinical Vitals Trend</h3>
+            <h3 className="font-bold text-slate-900 text-sm">Vitals</h3>
           </div>
-          <span className="text-xs text-slate-400 font-mono">Biometric Telemetry</span>
         </div>
 
         <div className="overflow-x-auto">
           <table className="w-full text-left font-mono tabular-nums text-xs">
             <thead>
-              <tr className="border-b border-slate-200 text-slate-500 font-sans text-[11px]">
-                <th className="py-2.5 px-3">Date &amp; Time</th>
-                <th className="px-3">Blood Pressure</th>
-                <th className="px-3">Heart Rate</th>
-                <th className="px-3">Oxygen (SpO2)</th>
-                <th className="px-3">Temperature</th>
-                <th className="px-3">Respiratory Rate</th>
-              </tr>
+                <tr className="border-b border-slate-200 text-slate-500 font-sans text-[11px]">
+                  <th className="py-2.5 px-3">Date</th>
+                  <th className="px-3">BP</th>
+                  <th className="px-3">HR</th>
+                  <th className="px-3">SpO2</th>
+                  <th className="px-3">Temp</th>
+                  <th className="px-3">Resp</th>
+                </tr>
             </thead>
             <tbody className="divide-y divide-slate-100">
               {patient.vitalsHistory.map((v, i) => (

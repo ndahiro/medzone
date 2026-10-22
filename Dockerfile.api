@@ -1,0 +1,27 @@
+# MedZone API — Express + MySQL backend (server.js).
+#
+#   docker compose up -d --build api
+#
+# NODE_ENV is deliberately NOT set to production here: server/auth.js and
+# server/crypto.js require JWT_SECRET and PHI_ENCRYPTION_KEY in production and
+# throw without them. Leave NODE_ENV unset for local dev (built-in fallbacks);
+# set NODE_ENV=production plus both secrets for real deployments.
+# node:24-alpine matches the project's local toolchain (node 24 / npm 11);
+# older npm majors fail `npm ci` on vite's peerOptional esbuild range.
+FROM node:24-alpine
+
+WORKDIR /app
+
+COPY package.json package-lock.json ./
+RUN npm ci --omit=dev
+
+COPY server.js ./server.js
+COPY server ./server
+
+EXPOSE 3001
+ENV PORT=3001
+
+HEALTHCHECK --interval=10s --timeout=5s --start-period=20s --retries=10 \
+  CMD node -e "fetch('http://127.0.0.1:3001/api/health').then(r=>{if(!r.ok)process.exit(1)}).catch(()=>process.exit(1))"
+
+CMD ["node", "server.js"]

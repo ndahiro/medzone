@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   Video,
   FileText,
@@ -7,20 +7,27 @@ import {
   AlertTriangle,
   CheckCircle2,
   Clock,
-  ShieldCheck,
   UserCheck,
   Search,
   Plus,
   FileCode2,
   Calendar,
   Sparkles,
+  Link2,
 } from 'lucide-react';
 import { useMedZone } from '../../context/MedZoneContext';
+import { useLanguage } from '../../context/LanguageContext';
 import { Appointment, Prescription } from '../../types';
+import { MinimalHeader } from '../layout/Minimal';
+import { EmptyState, MinimalCard, OutlineButton } from '../layout/MinimalParts';
+import { PatientInviteModal } from '../consultation/PatientInviteModal';
+import { PatientChartPicker } from './PatientChartPicker';
 
 export const ClinicianDashboard: React.FC = () => {
   const {
     patient,
+    patients,
+    selectPatient,
     appointments,
     prescriptions,
     startConsultation,
@@ -28,7 +35,25 @@ export const ClinicianDashboard: React.FC = () => {
     setShowFhirModal,
     setShowComplianceModal,
     setShowSummaryExportModal,
+    waitingRoom: clinicWaitingRoom,
+    refreshWaitingRoom,
+    claimWaitingVisit,
   } = useMedZone();
+  const { t } = useLanguage();
+  const chartPrescriptions = prescriptions.filter(rx => rx.patientId === patient.id);
+
+  // Patient invitation link dialog (HCW@Home parity).
+  const [inviteTarget, setInviteTarget] = useState<Appointment | null>(null);
+
+  // The shared, clinic-wide queue: poll it while the station is open so a
+  // patient who checks in with any doctor appears for whoever is free.
+  // Jittered so 50 open stations do not pulse the endpoint together.
+  useEffect(() => {
+    void refreshWaitingRoom();
+    const intervalMs = 15000 + Math.floor(Math.random() * 5000);
+    const timer = setInterval(() => void refreshWaitingRoom(), intervalMs);
+    return () => clearInterval(timer);
+  }, [refreshWaitingRoom]);
 
   // Active EHR Tab in clinician station
   const [activeEhrTab, setActiveEhrTab] = useState<'overview' | 'labs' | 'meds' | 'diagnoses'>('overview');
@@ -60,68 +85,92 @@ export const ClinicianDashboard: React.FC = () => {
     }
   };
 
-  const handleIssueRxSubmit = (e: React.FormEvent) => {
+  const handleIssueRxSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    issuePrescription(medName, dosage, route, freq, Number(qty), Number(refills), instructions, pharmacy);
+    // The form stays open on refusal so the prescriber can retry.
+    const issued = await issuePrescription(medName, dosage, route, freq, Number(qty), Number(refills), instructions, pharmacy);
+    if (!issued) return;
     setShowIssueRxModal(false);
     setMedName('');
     setDosage('');
     setInstructions('');
   };
 
-  return (
-    <div className="space-y-8 pb-12">
-      {/* Clinician Command Center Header */}
-      <section className="bg-slate-900 text-white rounded-2xl p-6 sm:p-8 shadow-md border border-slate-800">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4">
-            <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-teal-800/80 border-2 border-teal-500/50 flex items-center justify-center text-teal-200 shrink-0 shadow-lg">
-              <span className="text-xl sm:text-2xl font-black">MD</span>
-            </div>
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white">
-                  Clinician Telemedicine Station
-                </h1>
-                <span className="text-xs font-mono bg-teal-950 text-teal-400 px-2 py-0.5 rounded border border-teal-800 font-semibold">
-                  NPI: 1892019482 · Active Licensure CA
-                </span>
-              </div>
-              <p className="text-xs sm:text-sm text-slate-400 mt-1">
-                Dr. Sarah Chen, MD · Chief of Cardiology · San Francisco General &amp; Heart Institute
-              </p>
-              <div className="flex flex-wrap items-center gap-4 mt-2 text-xs text-slate-400">
-                <span className="flex items-center gap-1.5 text-emerald-400">
-                  <ShieldCheck className="w-3.5 h-3.5" />
-                  HIPAA Security: 256-Bit E2EE Active
-                </span>
-                <span>·</span>
-                <span>FHIR R4 Server Connected</span>
-                <span>·</span>
-                <span>E-Prescribing Gateway Verified</span>
-              </div>
-            </div>
-          </div>
+  // Visit queue split by status: checked-in patients are the waiting room.
+  const waitingRoom = appointments.filter(a => a.status === 'in-progress');
+  const scheduledQueue = appointments.filter(a => a.status === 'scheduled');
 
-          {/* Quick Header Actions */}
-          <div className="flex flex-wrap items-center gap-3">
+  return (
+    <div className="mz-page">
+      <MinimalHeader
+        title="Clinician station"
+        subtitle="Today's visits at a glance"
+        actions={
+          <>
+            <PatientChartPicker />
             <button
               onClick={() => setShowIssueRxModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-teal-600 hover:bg-teal-500 text-white rounded-xl text-xs font-bold shadow-xs hover:shadow-md transition-all cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-[#0e8aa0] hover:bg-[#0b6e81] text-white rounded-xl text-[12.5px] font-semibold shadow-[0_4px_14px_rgba(14,138,160,0.35)] transition-colors cursor-pointer whitespace-nowrap"
             >
               <Plus className="w-4 h-4" />
-              <span>Issue New E-Prescription</span>
+              <span className="hidden sm:inline">New e-prescription</span>
             </button>
             <button
               onClick={() => setShowFhirModal(true)}
-              className="flex items-center gap-2 px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold border border-slate-700 transition-colors cursor-pointer whitespace-nowrap"
+              className="flex items-center gap-2 px-4 py-2 bg-white hover:bg-[#eef7f8] text-[#0e7d90] rounded-xl text-[12.5px] font-semibold border border-[#cfe6ea] transition-colors cursor-pointer whitespace-nowrap"
             >
-              <FileCode2 className="w-4 h-4 text-teal-400" />
-              <span>FHIR / HL7 Interop</span>
+              <FileCode2 className="w-4 h-4" />
+              <span className="hidden sm:inline">FHIR / HL7</span>
             </button>
-          </div>
-        </div>
-      </section>
+          </>
+        }
+      />
+
+      <MinimalCard
+        title={t('waiting.title')}
+        subtitle={`${clinicWaitingRoom.length} waiting · ${scheduledQueue.length} scheduled · shared across the clinic`}
+        icon={<Video className="h-[18px] w-[18px]" strokeWidth={1.8} />}
+      >
+        {clinicWaitingRoom.length === 0 ? (
+          <EmptyState
+            icon={<Video className="w-7 h-7" strokeWidth={1.5} />}
+            title={t('waiting.empty')}
+            hint="Checked-in patients appear here with their room code."
+          />
+        ) : (
+          <ul className="divide-y divide-[#eef3f4]">
+            {clinicWaitingRoom.map(apt => (
+              <li key={apt.id} className="px-6 py-4 flex items-center justify-between gap-4">
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-[#16232b] truncate">
+                    {apt.patientName}
+                  </p>
+                  <p className="text-[12.5px] text-[#7b8a94] truncate">
+                    {apt.type} · room {apt.roomCode} · {apt.time} · {apt.providerName}
+                  </p>
+                  {apt.claimedBy && (
+                    <p className="text-[11.5px] text-teal-700 truncate">
+                      {t('waiting.claimedBy')} {apt.claimedBy}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  {!apt.claimedBy && (
+                    <button
+                      onClick={() => void claimWaitingVisit(apt.id)}
+                      className="flex items-center gap-1.5 rounded-lg border border-[#cfe6ea] bg-white px-3 py-1.5 text-[12px] font-semibold text-[#0e7d90] hover:bg-[#eef7f8] cursor-pointer"
+                    >
+                      <UserCheck className="w-3.5 h-3.5" />
+                      {t('waiting.claim')}
+                    </button>
+                  )}
+                  <OutlineButton label="Start visit" onClick={() => startConsultation(apt)} />
+                </div>
+              </li>
+            ))}
+          </ul>
+        )}
+      </MinimalCard>
 
       {/* Main Grid: Triage Queue & Patient Chart (High Density) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
@@ -143,7 +192,8 @@ export const ClinicianDashboard: React.FC = () => {
             {appointments.map(apt => (
               <div
                 key={apt.id}
-                className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs hover:border-teal-400 transition-all"
+                onClick={() => selectPatient(apt.patientId)}
+                className="bg-white rounded-xl border border-slate-200/90 p-4 shadow-xs hover:border-teal-400 transition-all cursor-pointer"
               >
                 <div className="flex items-start justify-between">
                   <div>
@@ -154,7 +204,8 @@ export const ClinicianDashboard: React.FC = () => {
                       </span>
                     </div>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      {apt.patientGender} · Age {apt.patientAge} · Blood {patient.bloodType}
+                      {apt.patientGender} · Age {apt.patientAge} · Blood{' '}
+                      {patients.find(p => p.id === apt.patientId)?.bloodType ?? '—'}
                     </p>
                   </div>
 
@@ -186,13 +237,22 @@ export const ClinicianDashboard: React.FC = () => {
                 {/* Launch Button */}
                 <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-[11px] font-mono text-slate-400">Room: {apt.roomCode}</span>
-                  <button
-                    onClick={() => startConsultation(apt)}
-                    className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-                  >
-                    <Video className="w-3.5 h-3.5" />
-                    <span>Launch Tele-Visit</span>
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setInviteTarget(apt)}
+                      className="px-3 py-2 bg-white hover:bg-slate-50 text-slate-700 font-semibold text-xs rounded-lg border border-slate-200 flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Link2 className="w-3.5 h-3.5 text-teal-700" />
+                      <span>Invite</span>
+                    </button>
+                    <button
+                      onClick={() => startConsultation(apt)}
+                      className="px-4 py-2 bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-xs rounded-lg shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
+                    >
+                      <Video className="w-3.5 h-3.5" />
+                      <span>Launch Tele-Visit</span>
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -281,7 +341,7 @@ export const ClinicianDashboard: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Medications ({prescriptions.length})
+                Medications ({chartPrescriptions.length})
               </button>
               <button
                 onClick={() => setActiveEhrTab('diagnoses')}
@@ -401,7 +461,7 @@ export const ClinicianDashboard: React.FC = () => {
                     + Add New E-Rx
                   </button>
                 </div>
-                {prescriptions.map(rx => (
+                {chartPrescriptions.map(rx => (
                   <div
                     key={rx.id}
                     className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between text-xs"
@@ -460,6 +520,13 @@ export const ClinicianDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Patient invitation link (HCW@Home parity) */}
+      <PatientInviteModal
+        open={inviteTarget !== null}
+        appointment={inviteTarget}
+        onClose={() => setInviteTarget(null)}
+      />
 
       {/* E-Prescription Modal */}
       {showIssueRxModal && (

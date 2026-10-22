@@ -1,0 +1,13 @@
+node_modules/
+dist/
+build/
+coverage/
+.git/
+.gitignore
+.vscode/
+.aistudio/
+.freebuff/
+*.log
+.env
+.env.local
+vite-dev.log
